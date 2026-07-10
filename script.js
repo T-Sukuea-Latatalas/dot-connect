@@ -29,7 +29,7 @@ let timerInterval = null;
 // 定数
 const PADDING = 40;
 const DOT_RADIUS = 10;
-const HIT_RADIUS = 38; // 当たり判定を広くして操作性を向上
+const HIT_RADIUS = 35; // 当たり判定を広くして快適に
 
 /**
  * 初期化
@@ -53,13 +53,10 @@ function init() {
     }, { passive: false });
     window.addEventListener('touchend', handleEnd);
 
-    // 描画ループの開始
+    // 描画ループ
     render();
 }
 
-/**
- * キャンバスのセットアップ
- */
 function setupCanvas() {
     const size = 320;
     canvas.width = size;
@@ -67,9 +64,6 @@ function setupCanvas() {
     calculateDots();
 }
 
-/**
- * ドットの座標とグリッド情報の計算
- */
 function calculateDots() {
     dots = [];
     const spacing = (canvas.width - PADDING * 2) / (gridCount - 1);
@@ -87,41 +81,36 @@ function calculateDots() {
 }
 
 /**
- * 【機能要件】中間の点を取得するロジック
- * 2点間に存在する未登録のドットを配列で返す
+ * 【最重要ロジック】2つの点の間にある点を取得する
  */
-function getIntermediateDots(startIdx, endIdx, currentList) {
-    const start = dots[startIdx];
-    const end = dots[endIdx];
-    const intermediates = [];
+function getIntermediatePoints(idx1, idx2) {
+    const p1 = dots[idx1];
+    const p2 = dots[idx2];
+    
+    const rowDiff = p2.row - p1.row;
+    const colDiff = p2.col - p1.col;
+    
+    // 直線上（水平、垂直、45度斜め）かチェック
+    const isStraight = (rowDiff === 0 || colDiff === 0 || Math.abs(rowDiff) === Math.abs(colDiff));
+    if (!isStraight) return null;
 
-    const dRow = end.row - start.row;
-    const dCol = end.col - start.col;
+    const stepR = Math.sign(rowDiff);
+    const stepC = Math.sign(colDiff);
+    const points = [];
+    
+    let r = p1.row + stepR;
+    let c = p1.col + stepC;
 
-    // 水平、垂直、または45度斜めか判定
-    if (dRow === 0 || dCol === 0 || Math.abs(dRow) === Math.abs(dCol)) {
-        const stepRow = Math.sign(dRow);
-        const stepCol = Math.sign(dCol);
-        
-        let currRow = start.row + stepRow;
-        let currCol = start.col + stepCol;
-
-        // 終点に到達するまで直進
-        while (currRow !== end.row || currCol !== end.col) {
-            const midIdx = currRow * gridCount + currCol;
-            // まだリストに含まれていない場合のみ追加
-            if (!currentList.includes(midIdx)) {
-                intermediates.push(midIdx);
-            }
-            currRow += stepRow;
-            currCol += stepCol;
-        }
+    while (r !== p2.row || c !== p2.col) {
+        points.push(r * gridCount + c);
+        r += stepR;
+        c += stepC;
     }
-    return intermediates;
+    return points;
 }
 
 /**
- * ゲーム開始
+ * ゲームロジック
  */
 function startGame() {
     level = 1;
@@ -133,9 +122,6 @@ function startGame() {
     startRound();
 }
 
-/**
- * ラウンド開始
- */
 function startRound() {
     userInput = [];
     lastDotIndex = null;
@@ -145,52 +131,51 @@ function startRound() {
     
     // レベル6以上で4x4に拡張
     gridCount = (level >= 6) ? 4 : 3;
-    
     calculateDots();
+    
     generatePattern(level + 2);
     animatePattern();
 }
 
 /**
- * パターンの生成
+ * 【ロジック修正】飛び越しを防ぎ、中間の点を含める生成
  */
 function generatePattern(targetLength) {
     pattern = [];
     let available = [...Array(dots.length).keys()];
     
     // 最初の点
-    let lastIdx = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-    pattern.push(lastIdx);
+    let currentIdx = available[Math.floor(Math.random() * available.length)];
+    pattern.push(currentIdx);
 
-    while (pattern.length < targetLength && available.length > 0) {
-        let nextIdx = available[Math.floor(Math.random() * available.length)];
+    let attempts = 0;
+    while (pattern.length < targetLength && attempts < 100) {
+        attempts++;
+        const nextIdx = Math.floor(Math.random() * dots.length);
         
-        // 【機能要件】中間の点があれば先に追加
-        const intermediates = getIntermediateDots(lastIdx, nextIdx, pattern);
-        intermediates.forEach(mid => {
-            pattern.push(mid);
-            available = available.filter(idx => idx !== mid);
-        });
+        // 自分自身、または既に使用済みの点はスキップ
+        if (nextIdx === currentIdx || pattern.includes(nextIdx)) continue;
 
-        // 本来の点を選択
-        if (!pattern.includes(nextIdx)) {
-            pattern.push(nextIdx);
-            available = available.filter(idx => idx !== nextIdx);
-            lastIdx = nextIdx;
-        }
+        const intermediates = getIntermediatePoints(currentIdx, nextIdx);
+        
+        // 直線上にない、または直線上に既に使用済みの点がある場合はやり直し
+        if (intermediates === null) continue;
+        if (intermediates.some(mid => pattern.includes(mid))) continue;
+
+        // 中間の点があれば全て追加し、最後に目的の点を追加
+        intermediates.forEach(mid => pattern.push(mid));
+        pattern.push(nextIdx);
+        currentIdx = nextIdx;
     }
-    // ターゲットの長さを超えすぎた場合は切り捨て（物理的に可能な範囲にする）
-    if (pattern.length > targetLength + 2) pattern = pattern.slice(0, targetLength + 2);
 }
 
 /**
  * 暗記アニメーション
  */
 async function animatePattern() {
-    const displayList = [];
-    for (let i = 0; i < pattern.length; i++) {
-        displayList.push(pattern[i]);
-        userInput = [...displayList]; // render()に描画させる
+    const fullPattern = [...pattern];
+    for (let i = 0; i < fullPattern.length; i++) {
+        userInput = fullPattern.slice(0, i + 1);
         await new Promise(r => setTimeout(r, 600 - Math.min(level * 40, 450)));
     }
     
@@ -202,9 +187,6 @@ async function animatePattern() {
     }, 400);
 }
 
-/**
- * タイマー管理
- */
 function startTimer() {
     timeLeft = 100;
     timerBar.style.width = "100%";
@@ -226,7 +208,7 @@ function startTimer() {
 }
 
 /**
- * 入力ハンドリング
+ * イベントハンドラ
  */
 function handleStart(e) {
     if (gameState !== 'INPUTTING') return;
@@ -253,21 +235,21 @@ function updateMousePos(e) {
     currentMousePos.y = e.clientY - rect.top;
 }
 
-/**
- * 衝突判定（ドットを通過したか）
- */
 function checkCollision() {
     dots.forEach(dot => {
         const dist = Math.hypot(dot.x - currentMousePos.x, dot.y - currentMousePos.y);
         if (dist < HIT_RADIUS) {
             if (!userInput.includes(dot.index)) {
-                // 【機能要件】中間の点があれば自動取得
+                // 中間の点があれば自動取得
                 if (userInput.length > 0) {
                     const prevIdx = userInput[userInput.length - 1];
-                    const intermediates = getIntermediateDots(prevIdx, dot.index, userInput);
-                    intermediates.forEach(mid => userInput.push(mid));
+                    const mids = getIntermediatePoints(prevIdx, dot.index);
+                    if (mids) {
+                        mids.forEach(m => {
+                            if (!userInput.includes(m)) userInput.push(m);
+                        });
+                    }
                 }
-                
                 userInput.push(dot.index);
                 lastDotIndex = dot.index;
                 if (navigator.vibrate) navigator.vibrate(10);
@@ -276,9 +258,6 @@ function checkCollision() {
     });
 }
 
-/**
- * 判定
- */
 function checkResult() {
     clearInterval(timerInterval);
     const isCorrect = JSON.stringify(pattern) === JSON.stringify(userInput);
@@ -304,7 +283,7 @@ function gameOver(msg) {
 }
 
 /**
- * 【視覚要件】描画システム
+ * 描画システム
  */
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -312,13 +291,13 @@ function render() {
     // 1. 線の描画
     if (userInput.length > 0) {
         ctx.beginPath();
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 8; // 太めの線
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.strokeStyle = "#ffffff";
         
-        // 選択中の点と線にグロー効果
-        ctx.shadowBlur = 12;
+        // グロー効果
+        ctx.shadowBlur = 15;
         ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
 
         userInput.forEach((idx, i) => {
@@ -327,13 +306,12 @@ function render() {
             else ctx.lineTo(dot.x, dot.y);
         });
 
-        // 最後の点から現在のポインタ位置までの動的な線
         if (isDragging && lastDotIndex !== null) {
             const lastDot = dots[lastDotIndex];
             ctx.lineTo(currentMousePos.x, currentMousePos.y);
         }
         ctx.stroke();
-        ctx.shadowBlur = 0; // 他の描画に影響させないようリセット
+        ctx.shadowBlur = 0; // リセット
     }
 
     // 2. ドットの描画
@@ -344,13 +322,13 @@ function render() {
         ctx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
         
         if (isSelected) {
-            ctx.fillStyle = "#ffffff"; // 純白
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "rgba(255, 255, 255, 1)";
             ctx.fill();
             ctx.shadowBlur = 0;
         } else {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; // 半透明の白
+            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
             ctx.fill();
         }
     });
@@ -358,5 +336,4 @@ function render() {
     requestAnimationFrame(render);
 }
 
-// 起動
 init();
