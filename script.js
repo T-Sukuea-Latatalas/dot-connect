@@ -2,7 +2,7 @@
  * PATTERN MEMORY GAME - script.js
  */
 
-// DOM要素（init() 内で安全に取得するため、グローバルでは宣言のみ行う）
+// DOM要素
 let canvas;
 let ctx;
 let startBtn;
@@ -10,6 +10,7 @@ let levelText;
 let scoreText;
 let statusMsg;
 let lifeContainer;
+let muteBtn; // 追加: ミュートボタン
 
 // ゲーム設定と状態管理
 let gameState = 'IDLE'; // IDLE, MEMORIZING, INPUTTING, GAMEOVER
@@ -32,6 +33,21 @@ const PADDING = 40;
 const DOT_RADIUS = 10;
 const HIT_RADIUS = 35; // 当たり判定の広さ
 
+// サウンドシステム設定
+let audioCtx = null;
+let isMuted = false;
+let bgmInterval = null;
+let currentBgmNoteIndex = 0;
+
+// BGM用：アンビエントなアルペジオパターン (周波数リスト)
+// 構成コード: Am7 -> G -> F -> Em
+const bgmNotes = [
+    220.00, 261.63, 329.63, 392.00, // Am7 (A3, C4, E4, G4)
+    196.00, 246.94, 293.66, 392.00, // G (G3, B3, D4, G4)
+    174.61, 220.00, 261.63, 349.23, // F (F3, A3, C4, F4)
+    164.81, 196.00, 246.94, 329.63  // Em (E3, G3, B3, E4)
+];
+
 /**
  * 初期化（DOMContentLoaded イベントの発生後に安全に実行されます）
  */
@@ -45,6 +61,7 @@ function init() {
     levelText = document.getElementById('level-value');
     scoreText = document.getElementById('score-value');
     statusMsg = document.getElementById('status-message');
+    muteBtn = document.getElementById('mute-btn'); // 取得
 
     // ライフ表示コンテナの多重化取得（フォールバック）
     lifeContainer = document.getElementById('life-display') || 
@@ -55,6 +72,9 @@ function init() {
     if (canvas && startBtn) {
         setupCanvas();
         startBtn.addEventListener('click', startGame);
+        if (muteBtn) {
+            muteBtn.addEventListener('click', toggleMute);
+        }
 
         // マウスイベント
         canvas.addEventListener('mousedown', handleStart);
@@ -77,6 +97,151 @@ function init() {
         // 描画ループの開始
         render();
     }
+}
+
+/**
+ * サウンドシステム（Web Audio API）の初期化
+ */
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+/**
+ * BGMのループ制御
+ */
+function startBGM() {
+    if (bgmInterval) return;
+    currentBgmNoteIndex = 0;
+    // 0.45秒ごとに1拍を刻む（穏やかなLo-Fiテンポ）
+    bgmInterval = setInterval(playBGMStep, 450);
+}
+
+function playBGMStep() {
+    if (isMuted || !audioCtx || audioCtx.state === 'suspended') return;
+
+    const noteHz = bgmNotes[currentBgmNoteIndex];
+    
+    // サイン波や三角波などの柔らかい音でBGMを演奏する
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'triangle'; // トゲのない暖かい音
+    osc.frequency.setValueAtTime(noteHz, audioCtx.currentTime);
+
+    // BGMがうるさくならないよう、極めて小さめの音量に設定
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, audioCtx.currentTime); // 高域をカットして耳に優しく
+
+    osc.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
+
+    currentBgmNoteIndex = (currentBgmNoteIndex + 1) % bgmNotes.length;
+}
+
+/**
+ * ミュート機能のトグル
+ */
+function toggleMute() {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    isMuted = !isMuted;
+    if (muteBtn) {
+        muteBtn.innerText = isMuted ? '🔇' : '🔊';
+    }
+}
+
+/**
+ * 点通過時（SE）の演奏：結んだ順序に応じてピッチが少しずつ高くなります
+ */
+function playDotSFX(indexInSequence) {
+    if (isMuted || !audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine'; // ピュアな電子音
+    const baseFreq = 261.63; // C4
+    // 順序が進むにつれて半音（約1.059倍）ずつ上昇させる
+    const freq = baseFreq * Math.pow(1.059, indexInSequence * 2);
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+}
+
+/**
+ * 正解ファンファーレ（SE）
+ */
+function playSuccessSFX() {
+    if (isMuted || !audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    // C5 -> E5 -> G5 -> C6 の明るいアルペジオ
+    const chordNotes = [523.25, 659.25, 783.99, 1046.50];
+
+    chordNotes.forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + index * 0.08);
+
+        gain.gain.setValueAtTime(0, now + index * 0.08);
+        gain.gain.linearRampToValueAtTime(0.06, now + index * 0.08 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.08 + 0.4);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + index * 0.08);
+        osc.stop(now + index * 0.08 + 0.4);
+    });
+}
+
+/**
+ * 間違い / ダメージ（SE）
+ */
+function playFailSFX() {
+    if (isMuted || !audioCtx) return;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'sawtooth'; // 鋸歯状波のざらざらした音
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    // 音高を下降させて不協和音にする
+    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
 }
 
 /**
@@ -157,6 +322,13 @@ function updateLifeDisplay() {
  * ゲーム開始
  */
 function startGame() {
+    // 音響コンテキストの生成と再開
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    startBGM(); // BGMループの開始
+
     level = 1;
     score = 0;
     lives = MAX_LIVES;
@@ -227,6 +399,7 @@ async function animatePattern() {
     const fullPattern = [...pattern];
     for (let i = 0; i < fullPattern.length; i++) {
         userInput = fullPattern.slice(0, i + 1);
+        playDotSFX(i); // お手本中の点を結ぶタイミングにSEを鳴らす
         await new Promise(r => setTimeout(r, Math.max(200, 600 - level * 40)));
     }
     
@@ -287,12 +460,16 @@ function checkCollision() {
                     const mids = getIntermediatePoints(prevIdx, dot.index);
                     if (mids) {
                         mids.forEach(m => {
-                            if (!userInput.includes(m)) userInput.push(m);
+                            if (!userInput.includes(m)) {
+                                userInput.push(m);
+                                playDotSFX(userInput.length - 1); // 自動補完された際にも音を鳴らす
+                            }
                         });
                     }
                 }
                 userInput.push(dot.index);
                 lastDotIndex = dot.index;
+                playDotSFX(userInput.length - 1); // ユーザーがなぞったタイミングでSEを鳴らす
                 if (navigator.vibrate) navigator.vibrate(10);
             }
         }
@@ -308,6 +485,7 @@ function checkResult() {
     if (isCorrect) {
         level++;
         score += level * 100;
+        playSuccessSFX(); // 正解時のファンファーレ
         if (levelText) levelText.innerText = level;
         if (scoreText) scoreText.innerText = score;
         if (statusMsg) {
@@ -318,6 +496,7 @@ function checkResult() {
     } else {
         lives--;
         updateLifeDisplay();
+        playFailSFX(); // ミス時のSE
         
         if (lives > 0) {
             if (statusMsg) {
