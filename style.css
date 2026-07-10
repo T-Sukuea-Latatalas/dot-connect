@@ -1,15 +1,19 @@
 /* --- 変数定義 --- */
 :root {
     --bg-color: #0f172a;
-    --container-bg: #1e293b;
-    --primary-color: #38bdf8;
-    --accent-color: #818cf8;
+    --container-bg: #0f172a; /* 背景と同じか、より深く */
+    --primary-color: #ffffff; /* メインカラーを白に変更 */
+    --accent-color: #e0e0e0;  /* 明るいグレーに変更 */
     --success-color: #22c55e;
-    --warning-color: #eab308;
-    --danger-color: #ef4444;
-    --text-main: #f8fafc;
+    --warning-color: #facc15;
+    --danger-color: #f87171;
+    --text-main: #ffffff;
     --text-muted: #94a3b8;
-    --dot-normal: #334155;
+    --dot-normal: rgba(255, 255, 255, 0.2); /* 半透明の白 */
+    
+    /* グローエフェクト用の設定 */
+    --glow-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    --glow-text: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 /* --- 全体レイアウト --- */
@@ -17,7 +21,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent; /* スマホのタップ強調を消す */
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -28,21 +32,21 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden; /* スクロール防止 */
+    overflow: hidden;
 }
 
 .game-wrapper {
     width: 100%;
     max-width: 400px;
-    padding: 20px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    animation: fadeIn 0.5s ease-out;
+    gap: 24px;
+    animation: fadeIn 0.6s ease-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -52,20 +56,20 @@ header {
 }
 
 .game-title {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     color: var(--primary-color);
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    text-shadow: var(--glow-text);
 }
 
 .stats-container {
     display: flex;
     justify-content: space-around;
-    background: var(--container-bg);
-    padding: 15px;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05); /* 非常に薄い白 */
+    padding: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat-item {
@@ -75,22 +79,24 @@ header {
 }
 
 .label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     margin-bottom: 4px;
+    letter-spacing: 0.05em;
 }
 
 .value {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    color: var(--text-main);
+    color: var(--primary-color);
+    text-shadow: var(--glow-text);
 }
 
 /* --- メッセージエリア --- */
 .message-area {
     height: 1.5rem;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: var(--accent-color);
     font-weight: 500;
 }
@@ -98,40 +104,40 @@ header {
 /* --- タイマーバー --- */
 .timer-container {
     width: 100%;
-    height: 8px;
+    height: 6px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
 .timer-bar {
-    width: 100%; /* JSで制御 */
+    width: 100%;
     height: 100%;
-    background-color: var(--success-color);
+    background-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     transition: width 0.1s linear, background-color 0.3s ease;
 }
 
-/* JSでクラスを付け替える想定 */
-.timer-bar.warning { background-color: var(--warning-color); }
-.timer-bar.critical { background-color: var(--danger-color); }
+.timer-bar.warning { background-color: var(--warning-color); box-shadow: 0 0 10px var(--warning-color); }
+.timer-bar.critical { background-color: var(--danger-color); box-shadow: 0 0 10px var(--danger-color); }
 
 /* --- キャンバスエリア --- */
 .canvas-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: var(--container-bg);
-    border-radius: 24px;
-    padding: 10px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-    touch-action: none; /* スマホのスクロール干渉防止 */
+    background: #0f172a; /* 深い紺色 */
+    border-radius: 32px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    touch-action: none;
 }
 
 #game-canvas {
     max-width: 100%;
     height: auto;
     cursor: pointer;
-    /* 線を滑らかに見せる設定 */
     image-rendering: -webkit-optimize-contrast;
 }
 
@@ -143,33 +149,42 @@ header {
 
 .primary-btn {
     width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
     color: white;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.1s, filter 0.2s, box-shadow 0.2s;
-    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
 }
 
 .primary-btn:hover {
-    filter: brightness(1.1);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 .primary-btn:active {
-    transform: scale(0.98);
-    box-shadow: 0 4px 6px -1px rgba(56, 189, 248, 0.3);
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 起動ボタンの強調 */
+#start-btn:not([disabled]) {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 /* --- レスポンシブ対応 --- */
 @media (max-width: 350px) {
     .game-wrapper {
-        padding: 10px;
+        padding: 16px;
     }
     .game-title {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
 }
