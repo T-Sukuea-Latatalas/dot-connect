@@ -8,7 +8,7 @@ const startBtn = document.getElementById('start-btn');
 const levelText = document.getElementById('level-value');
 const scoreText = document.getElementById('score-value');
 const statusMsg = document.getElementById('status-message');
-const lifeContainer = document.querySelector('.timer-container'); // タイマーの場所をライフ表示に流用
+const lifeContainer = document.getElementById('life-display'); // 修正: IDで取得
 
 // ゲーム設定と状態管理
 let gameState = 'IDLE'; // IDLE, MEMORIZING, INPUTTING, GAMEOVER
@@ -22,9 +22,14 @@ let lastDotIndex = null;
 let isDragging = false;
 let currentMousePos = { x: 0, y: 0 };
 
-// ライフ制の追加
+// ライフ管理
 let lives = 3;
 const MAX_LIVES = 3;
+
+// 定数
+const PADDING = 40;
+const DOT_RADIUS = 10;
+const HIT_RADIUS = 35; // 当たり判定の広さ
 
 /**
  * 初期化
@@ -40,15 +45,17 @@ function init() {
 
     // タッチイベント
     canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         handleStart(e.touches[0]);
     }, { passive: false });
     window.addEventListener('touchmove', (e) => {
+        if (e.cancelable) e.preventDefault();
         handleMove(e.touches[0]);
     }, { passive: false });
-    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchend', (e) => {
+        handleEnd();
+    }, { passive: false });
 
-    // 描画ループの開始
     render();
 }
 
@@ -63,16 +70,16 @@ function setupCanvas() {
 }
 
 /**
- * ドットの計算
+ * ドットの配置計算
  */
 function calculateDots() {
     dots = [];
-    const spacing = (canvas.width - 40 * 2) / (gridCount - 1);
+    const spacing = (canvas.width - PADDING * 2) / (gridCount - 1);
     for (let y = 0; y < gridCount; y++) {
         for (let x = 0; x < gridCount; x++) {
             dots.push({
-                x: 40 + x * spacing,
-                y: 40 + y * spacing,
+                x: PADDING + x * spacing,
+                y: PADDING + y * spacing,
                 index: y * gridCount + x,
                 row: y,
                 col: x
@@ -82,13 +89,15 @@ function calculateDots() {
 }
 
 /**
- * 中間の点を取得するロジック
+ * 直線上の点（中間点）を取得する
  */
 function getIntermediatePoints(idx1, idx2) {
     const p1 = dots[idx1];
     const p2 = dots[idx2];
     const rowDiff = p2.row - p1.row;
     const colDiff = p2.col - p1.col;
+
+    // 水平、垂直、または45度斜め判定
     const isStraight = (rowDiff === 0 || colDiff === 0 || Math.abs(rowDiff) === Math.abs(colDiff));
     if (!isStraight) return null;
 
@@ -110,17 +119,11 @@ function getIntermediatePoints(idx1, idx2) {
  * ライフ表示の更新
  */
 function updateLifeDisplay() {
-    lifeContainer.innerHTML = ''; // 中身をクリア
-    lifeContainer.style.display = 'flex';
-    lifeContainer.style.justifyContent = 'center';
-    lifeContainer.style.alignItems = 'center';
-    lifeContainer.style.gap = '8px';
-    lifeContainer.style.background = 'none'; // 背景バーを消す
-
+    if (!lifeContainer) return;
+    lifeContainer.innerHTML = '';
     for (let i = 0; i < MAX_LIVES; i++) {
         const heart = document.createElement('span');
         heart.innerText = i < lives ? '❤️' : '🖤';
-        heart.style.fontSize = '1.2rem';
         heart.style.textShadow = i < lives ? '0 0 10px rgba(255, 255, 255, 0.5)' : 'none';
         lifeContainer.appendChild(heart);
     }
@@ -143,7 +146,6 @@ function startGame() {
 
 /**
  * ラウンド開始
- * @param {boolean} isNewPattern - 新しい問題を作成するかどうか
  */
 function startRound(isNewPattern) {
     userInput = [];
@@ -162,7 +164,7 @@ function startRound(isNewPattern) {
 }
 
 /**
- * 問題パターンの生成（飛び越し防止）
+ * パターンの生成（安定化版）
  */
 function generatePattern(targetLength) {
     pattern = [];
@@ -170,40 +172,47 @@ function generatePattern(targetLength) {
     pattern.push(currentIdx);
 
     let attempts = 0;
-    while (pattern.length < targetLength && attempts < 100) {
+    while (pattern.length < targetLength && attempts < 200) {
         attempts++;
         const nextIdx = Math.floor(Math.random() * dots.length);
+        
         if (nextIdx === currentIdx || pattern.includes(nextIdx)) continue;
 
         const intermediates = getIntermediatePoints(currentIdx, nextIdx);
+        
+        // 直線上にない、または直線上に既に使用済みの点がある場合は無効
         if (intermediates === null) continue;
         if (intermediates.some(mid => pattern.includes(mid))) continue;
 
+        // 中間点を追加
         intermediates.forEach(mid => pattern.push(mid));
         pattern.push(nextIdx);
         currentIdx = nextIdx;
     }
+    
+    // 目標の長さに届かない場合の保険（最低3点は確保）
+    if (pattern.length < 3) generatePattern(targetLength);
 }
 
 /**
- * お手本アニメーション
+ * お手本アニメーション（排他制御）
  */
 async function animatePattern() {
     const fullPattern = [...pattern];
     for (let i = 0; i < fullPattern.length; i++) {
         userInput = fullPattern.slice(0, i + 1);
-        await new Promise(r => setTimeout(r, 600 - Math.min(level * 40, 450)));
+        await new Promise(r => setTimeout(r, Math.max(200, 600 - level * 40)));
     }
     
     setTimeout(() => {
         userInput = [];
-        gameState = 'INPUTTING';
+        gameState = 'INPUTTING'; // ここで入力を許可
         statusMsg.innerText = "なぞってください！";
     }, 400);
 }
 
 /**
- * イベントハンドラ
+ * イベント処理
  */
 function handleStart(e) {
     if (gameState !== 'INPUTTING') return;
@@ -226,14 +235,17 @@ function handleEnd() {
 
 function updateMousePos(e) {
     const rect = canvas.getBoundingClientRect();
-    currentMousePos.x = e.clientX - rect.left;
-    currentMousePos.y = e.clientY - rect.top;
+    // スケール比率を考慮して座標を変換
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    currentMousePos.x = (e.clientX - rect.left) * scaleX;
+    currentMousePos.y = (e.clientY - rect.top) * scaleY;
 }
 
 function checkCollision() {
     dots.forEach(dot => {
         const dist = Math.hypot(dot.x - currentMousePos.x, dot.y - currentMousePos.y);
-        if (dist < 35) {
+        if (dist < HIT_RADIUS) {
             if (!userInput.includes(dot.index)) {
                 if (userInput.length > 0) {
                     const prevIdx = userInput[userInput.length - 1];
@@ -253,7 +265,7 @@ function checkCollision() {
 }
 
 /**
- * 判定ロジック
+ * 判定
  */
 function checkResult() {
     const isCorrect = JSON.stringify(pattern) === JSON.stringify(userInput);
@@ -271,9 +283,8 @@ function checkResult() {
         updateLifeDisplay();
         
         if (lives > 0) {
-            statusMsg.innerText = `ミス！ あと ${lives} 回間違えると終了です`;
+            statusMsg.innerText = `ミス！ 残り ${lives} 回`;
             statusMsg.style.color = "#ffcc00";
-            // ライフが残っている場合は同じ問題でお手本を再表示
             setTimeout(() => startRound(false), 1500);
         } else {
             gameOver("ゲームオーバー！");
@@ -290,12 +301,12 @@ function gameOver(msg) {
 }
 
 /**
- * 描画システム
+ * 描画ループ
  */
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 線の描画
+    // 1. 線の描画
     if (userInput.length > 0) {
         ctx.beginPath();
         ctx.lineWidth = 8;
@@ -319,11 +330,12 @@ function render() {
         ctx.shadowBlur = 0;
     }
 
-    // ドットの描画
+    // 2. ドットの描画
     dots.forEach(dot => {
         const isSelected = userInput.includes(dot.index);
         ctx.beginPath();
-        ctx.arc(dot.x, dot.y, 10, 0, Math.PI * 2);
+        ctx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
+        
         if (isSelected) {
             ctx.fillStyle = "#ffffff";
             ctx.shadowBlur = 20;
@@ -339,4 +351,5 @@ function render() {
     requestAnimationFrame(render);
 }
 
+// 起動
 init();
