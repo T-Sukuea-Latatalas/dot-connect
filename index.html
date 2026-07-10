@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pattern Memory Game</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts などを読み込むとよりモダンになります -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="game-wrapper">
+        <header>
+            <h1 class="game-title">PATTERN MEMORY</h1>
+        </header>
+
+        <section class="stats-container">
+            <div class="stat-item">
+                <span class="label">LEVEL</span>
+                <span id="level-value" class="value">1</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">SCORE</span>
+                <span id="score-value" class="value">0</span>
+            </div>
+        </section>
+
+        <section class="message-area">
+            <p id="status-message">「ゲーム開始」を押してください</p>
+        </section>
+
+        <section class="timer-container">
+            <div id="timer-bar" class="timer-bar"></div>
+        </section>
+
+        <section class="canvas-container">
+            <!-- パターンを描画するためのCanvas -->
+            <canvas id="game-canvas" width="320" height="320"></canvas>
+        </section>
+
+        <section class="controls">
+            <button id="start-btn" class="primary-btn">ゲーム開始</button>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
