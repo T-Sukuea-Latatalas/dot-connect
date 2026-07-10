@@ -20,7 +20,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent; /* タップ時の青い枠を消す */
 }
 
 body {
@@ -31,17 +31,17 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* スクロール禁止 */
     background: radial-gradient(circle at center, #0a0f1a 0%, #05070a 100%);
 }
 
 .game-wrapper {
     width: 100%;
     max-width: 400px;
-    padding: 24px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px; /* 要素間の間隔を少し詰めてコンパクトに */
     animation: fadeIn 0.8s ease-out;
 }
 
@@ -56,7 +56,7 @@ header {
 }
 
 .game-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 600;
     letter-spacing: 0.3em;
     text-transform: uppercase;
@@ -70,8 +70,8 @@ header {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    padding: 20px;
-    border-radius: 24px;
+    padding: 16px;
+    border-radius: 20px;
     border: 1px solid var(--glass-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
@@ -83,15 +83,15 @@ header {
 }
 
 .label {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     letter-spacing: 0.1em;
     font-weight: 600;
 }
 
 .value {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--primary-color);
     text-shadow: 0 0 8px var(--accent-glow);
@@ -108,39 +108,22 @@ header {
     transition: color 0.3s ease;
 }
 
-/* --- ライフ表示エリア（タイマーバーの代わり） --- */
-/* HTML上は .timer-container クラスを JS で操作して表示 */
-.timer-container {
+/* --- ライフ表示エリア（タイマーの代わり） --- */
+.life-container {
     height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 12px;
-    background: none; /* バーの背景を削除 */
+    margin: 5px 0;
 }
 
 /* ライフ（ハート）のスタイル */
-.timer-container span {
-    font-size: 1.5rem;
-    filter: drop-shadow(0 0 5px var(--accent-glow));
+.life-container span {
+    font-size: 1.6rem;
+    filter: drop-shadow(0 0 8px var(--accent-glow));
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* ダメージ時のアニメーション（JS側でクラス付与を想定、またはstatusMsgの変化に合わせて） */
-.miss-effect {
-    animation: shake 0.4s ease-in-out, flashRed 0.4s ease-in-out;
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    50% { transform: translateX(10px); }
-    75% { transform: translateX(-5px); }
-}
-
-@keyframes flashRed {
-    0%, 100% { color: var(--primary-color); }
-    50% { color: var(--danger-color); }
+    user-select: none;
 }
 
 /* --- キャンバスエリア --- */
@@ -149,17 +132,19 @@ header {
     justify-content: center;
     align-items: center;
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 32px;
-    padding: 10px;
+    border-radius: 28px;
+    padding: 8px; /* パディングを調整して指の動きを妨げないように */
     border: 1px solid var(--glass-border);
-    touch-action: none;
+    touch-action: none; /* スマホのスクロールを完全に防止 */
     box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    margin: 0 auto;
 }
 
 #game-canvas {
     max-width: 100%;
     height: auto;
     cursor: pointer;
+    /* Canvas上の線がより発光して見えるためのフィルタ */
     filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
 }
 
@@ -167,26 +152,28 @@ header {
 .controls {
     display: flex;
     justify-content: center;
+    margin-top: 5px;
 }
 
 .primary-btn {
     width: 100%;
-    padding: 20px;
+    padding: 18px;
     border: none;
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--primary-color);
     color: #000000;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+    filter: brightness(0.95);
 }
 
 .primary-btn:active {
@@ -199,15 +186,22 @@ header {
     box-shadow: none;
     border: 1px solid var(--glass-border);
     cursor: default;
+    transform: none;
 }
 
-/* --- レスポンシブ対応 --- */
-@media (max-width: 350px) {
+/* --- レスポンシブ対応（小型デバイス） --- */
+@media (max-width: 360px) {
     .game-wrapper {
-        padding: 16px;
-        gap: 16px;
+        padding: 12px;
+        gap: 12px;
     }
     .game-title {
         font-size: 1.2rem;
+    }
+    .value {
+        font-size: 1.2rem;
+    }
+    .life-container span {
+        font-size: 1.4rem;
     }
 }
