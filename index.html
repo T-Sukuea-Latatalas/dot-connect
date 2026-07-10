@@ -2,19 +2,32 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <!-- ユーザーのズーム操作を禁止し、パターン入力中の誤作動を防ぐ設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pattern Memory Game</title>
+    <title>Pattern Memory - ホワイトネオン</title>
+    
+    <!-- 外部スタイルシートの読み込み -->
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts などを読み込むとよりモダンになります -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- モダンなタイポグラフィのためのGoogle Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- スマホのアドレスバー等の色設定（PWA風） -->
+    <meta name="theme-color" content="#0a0f1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
     <div class="game-wrapper">
+        <!-- ヘッダーエリア -->
         <header>
             <h1 class="game-title">PATTERN MEMORY</h1>
         </header>
 
+        <!-- 統計エリア（LEVEL / SCORE） -->
         <section class="stats-container">
             <div class="stat-item">
                 <span class="label">LEVEL</span>
@@ -26,24 +39,29 @@
             </div>
         </section>
 
+        <!-- インストラクション・フィードバックメッセージ -->
         <section class="message-area">
             <p id="status-message">「ゲーム開始」を押してください</p>
         </section>
 
+        <!-- 制限時間を表すタイマーバー -->
         <section class="timer-container">
             <div id="timer-bar" class="timer-bar"></div>
         </section>
 
+        <!-- ゲームのメインとなるCanvasエリア -->
         <section class="canvas-container">
-            <!-- パターンを描画するためのCanvas -->
+            <!-- 320x320の解像度でパターンを描画（CSSでレスポンシブ調整） -->
             <canvas id="game-canvas" width="320" height="320"></canvas>
         </section>
 
+        <!-- 操作ボタンエリア -->
         <section class="controls">
             <button id="start-btn" class="primary-btn">ゲーム開始</button>
         </section>
     </div>
 
+    <!-- 外部JavaScriptの読み込み（DOM構築後に実行） -->
     <script src="script.js"></script>
 </body>
 </html>
