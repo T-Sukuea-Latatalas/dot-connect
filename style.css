@@ -7,8 +7,8 @@
     --glass-border: rgba(255, 255, 255, 0.15);
     
     --success-color: #ffffff;
-    --warning-color: #ffcc00; /* 黄色 */
-    --danger-color: #ff4444;  /* 赤 */
+    --warning-color: #ffcc00; /* ミス警告用 */
+    --danger-color: #ff4444;  /* ダメージ・ゲームオーバー用 */
     
     --text-main: #ffffff;
     --text-muted: rgba(255, 255, 255, 0.5);
@@ -31,7 +31,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden; /* スクロール防止 */
+    overflow: hidden;
     background: radial-gradient(circle at center, #0a0f1a 0%, #05070a 100%);
 }
 
@@ -101,36 +101,46 @@ header {
 .message-area {
     height: 1.5rem;
     text-align: center;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: var(--primary-color);
     font-weight: 500;
     letter-spacing: 0.05em;
+    transition: color 0.3s ease;
 }
 
-/* --- タイマーバー --- */
+/* --- ライフ表示エリア（タイマーバーの代わり） --- */
+/* HTML上は .timer-container クラスを JS で操作して表示 */
 .timer-container {
-    width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    background: none; /* バーの背景を削除 */
 }
 
-.timer-bar {
-    width: 100%;
-    height: 100%;
-    background-color: var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-color);
-    transition: width 0.1s linear, background-color 0.3s ease;
+/* ライフ（ハート）のスタイル */
+.timer-container span {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 5px var(--accent-glow));
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.timer-bar.warning { 
-    background-color: var(--warning-color); 
-    box-shadow: 0 0 10px var(--warning-color);
+/* ダメージ時のアニメーション（JS側でクラス付与を想定、またはstatusMsgの変化に合わせて） */
+.miss-effect {
+    animation: shake 0.4s ease-in-out, flashRed 0.4s ease-in-out;
 }
-.timer-bar.critical { 
-    background-color: var(--danger-color); 
-    box-shadow: 0 0 10px var(--danger-color);
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-5px); }
+}
+
+@keyframes flashRed {
+    0%, 100% { color: var(--primary-color); }
+    50% { color: var(--danger-color); }
 }
 
 /* --- キャンバスエリア --- */
@@ -150,8 +160,7 @@ header {
     max-width: 100%;
     height: auto;
     cursor: pointer;
-    /* Canvas上の線がより発光して見えるためのフィルタ */
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
 }
 
 /* --- コントロール（目を引く白基調ボタン） --- */
@@ -178,7 +187,6 @@ header {
 .primary-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-    filter: brightness(0.9);
 }
 
 .primary-btn:active {
@@ -191,18 +199,15 @@ header {
     box-shadow: none;
     border: 1px solid var(--glass-border);
     cursor: default;
-    transform: none;
 }
 
 /* --- レスポンシブ対応 --- */
 @media (max-width: 350px) {
     .game-wrapper {
         padding: 16px;
+        gap: 16px;
     }
     .game-title {
-        font-size: 1.2rem;
-    }
-    .value {
         font-size: 1.2rem;
     }
 }
