@@ -1,19 +1,19 @@
 /* --- 変数定義 --- */
 :root {
-    --bg-color: #0f172a;
-    --container-bg: #0f172a; /* 背景と同じか、より深く */
-    --primary-color: #ffffff; /* メインカラーを白に変更 */
-    --accent-color: #e0e0e0;  /* 明るいグレーに変更 */
-    --success-color: #22c55e;
-    --warning-color: #facc15;
-    --danger-color: #f87171;
+    --bg-color: #0a0f1e; /* ドットが最も映える深い色 */
+    --container-bg: rgba(255, 255, 255, 0.03); /* ガラス質感用の薄い白 */
+    --primary-color: #ffffff; /* 純白 */
+    --accent-color: #ffffff; 
+    --success-color: #ffffff;
+    --warning-color: #fbbf24; /* 警告時のみ色を付ける */
+    --danger-color: #f87171;  /* 警告時のみ色を付ける */
     --text-main: #ffffff;
-    --text-muted: #94a3b8;
-    --dot-normal: rgba(255, 255, 255, 0.2); /* 半透明の白 */
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --dot-normal: rgba(255, 255, 255, 0.15); /* 半透明の白 */
     
-    /* グローエフェクト用の設定 */
-    --glow-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
-    --glow-text: 0 0 8px rgba(255, 255, 255, 0.5);
+    /* ホワイトネオン・グロー効果 */
+    --neon-glow: 0 0 15px rgba(255, 255, 255, 0.4);
+    --neon-text-glow: 0 0 8px rgba(255, 255, 255, 0.6);
 }
 
 /* --- 全体レイアウト --- */
@@ -33,6 +33,8 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow: hidden;
+    /* 背景に薄いグラデーションを入れて奥行きを出す */
+    background: radial-gradient(circle at center, #161e35 0%, #0a0f1e 100%);
 }
 
 .game-wrapper {
@@ -42,11 +44,11 @@ body {
     display: flex;
     flex-direction: column;
     gap: 24px;
-    animation: fadeIn 0.6s ease-out;
+    animation: fadeIn 0.8s ease-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -58,18 +60,20 @@ header {
 .game-title {
     font-size: 1.6rem;
     font-weight: 600;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.2em;
     color: var(--primary-color);
-    text-shadow: var(--glow-text);
+    text-shadow: var(--neon-text-glow);
 }
 
 .stats-container {
     display: flex;
     justify-content: space-around;
-    background: rgba(255, 255, 255, 0.05); /* 非常に薄い白 */
+    background: var(--container-bg);
+    backdrop-filter: blur(10px);
     padding: 16px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--neon-glow);
 }
 
 .stat-item {
@@ -82,31 +86,34 @@ header {
     font-size: 0.7rem;
     color: var(--text-muted);
     margin-bottom: 4px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
 .value {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 600;
     color: var(--primary-color);
-    text-shadow: var(--glow-text);
+    text-shadow: var(--neon-text-glow);
 }
 
 /* --- メッセージエリア --- */
 .message-area {
     height: 1.5rem;
     text-align: center;
-    font-size: 1rem;
-    color: var(--accent-color);
+    font-size: 0.95rem;
+    color: var(--primary-color);
     font-weight: 500;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 /* --- タイマーバー --- */
 .timer-container {
     width: 100%;
-    height: 6px;
+    height: 4px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    border-radius: 2px;
     overflow: hidden;
 }
 
@@ -114,10 +121,11 @@ header {
     width: 100%;
     height: 100%;
     background-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 10px white;
     transition: width 0.1s linear, background-color 0.3s ease;
 }
 
+/* 警告時のみ色を変化させる */
 .timer-bar.warning { background-color: var(--warning-color); box-shadow: 0 0 10px var(--warning-color); }
 .timer-bar.critical { background-color: var(--danger-color); box-shadow: 0 0 10px var(--danger-color); }
 
@@ -126,11 +134,11 @@ header {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #0f172a; /* 深い紺色 */
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 32px;
     padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
     touch-action: none;
 }
 
@@ -141,7 +149,7 @@ header {
     image-rendering: -webkit-optimize-contrast;
 }
 
-/* --- コントロール --- */
+/* --- コントロール（ガラス質感ボタン） --- */
 .controls {
     display: flex;
     justify-content: center;
@@ -152,31 +160,39 @@ header {
     padding: 18px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
     color: white;
     font-size: 1rem;
     font-weight: 600;
+    letter-spacing: 0.1em;
     cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .primary-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
 }
 
 .primary-btn:active {
-    transform: scale(0.97);
-    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(0);
 }
 
-/* 起動ボタンの強調 */
+/* 起動可能状態の強調 */
 #start-btn:not([disabled]) {
-    background: var(--primary-color);
-    color: var(--bg-color);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95);
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+    border: none;
+}
+
+#start-btn[disabled] {
+    opacity: 0.3;
+    cursor: default;
 }
 
 /* --- レスポンシブ対応 --- */
