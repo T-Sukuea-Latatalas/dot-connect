@@ -2,32 +2,17 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- パターン入力中の誤作動を防ぐため、ズームを禁止したレスポンシブ設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pattern Memory - Life Edition</title>
-    
-    <!-- 外部スタイルシートの読み込み -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- モダンなタイポグラフィのためのGoogle Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- スマホブラウザのUI設定 -->
-    <meta name="theme-color" content="#05070a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-
     <div class="game-wrapper">
-        <!-- タイトルエリア -->
         <header>
             <h1 class="game-title">PATTERN MEMORY</h1>
         </header>
 
-        <!-- 統計エリア（JS: level-value, score-value を使用） -->
         <section class="stats-container">
             <div class="stat-item">
                 <span class="label">LEVEL</span>
@@ -39,28 +24,21 @@
             </div>
         </section>
 
-        <!-- メッセージエリア（JS: status-message を使用） -->
         <section class="message-area">
             <p id="status-message">「ゲーム開始」を押してください</p>
         </section>
 
-        <!-- ライフ表示エリア（JS: life-display を使用 / タイマーから置換） -->
-        <section id="life-display" class="life-container">
-            <!-- JavaScriptによって ❤️ が動的に挿入されます -->
-        </section>
+        <!-- ここが重要: id="life-display" -->
+        <section id="life-display" class="life-container"></section>
 
-        <!-- ゲームキャンバス（JS: game-canvas を使用） -->
         <section class="canvas-container">
             <canvas id="game-canvas" width="320" height="320"></canvas>
         </section>
 
-        <!-- コントロールエリア（JS: start-btn を使用） -->
         <section class="controls">
             <button id="start-btn" class="primary-btn">ゲーム開始</button>
         </section>
     </div>
-
-    <!-- メインロジックJavaScriptの読み込み -->
     <script src="script.js"></script>
 </body>
 </html>
