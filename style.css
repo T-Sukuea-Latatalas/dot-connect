@@ -51,8 +51,12 @@ body {
 }
 
 /* --- ヘッダー・統計（ガラス質感） --- */
-header {
-    text-align: center;
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 4px;
 }
 
 .game-title {
@@ -62,6 +66,35 @@ header {
     text-transform: uppercase;
     color: var(--primary-color);
     text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ミュートボタンのスタイル */
+.mute-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mute-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.mute-btn:active {
+    transform: scale(0.95);
 }
 
 .stats-container {
